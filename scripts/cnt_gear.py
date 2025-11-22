@@ -7,177 +7,62 @@ import math
 from samson import *
 
 import armchair_cnt
+import lonsdaleite_ingot
 
 class CNTGearGenerator:
     """
     Generates carbon nanotube-based molecular gears with lonsdaleite teeth.
-    
+
     Parameters:
     - n: Chiral index for armchair nanotube (M=0 means armchair: (n,n))
     - z_length: Length of nanotube in angstroms
     - num_teeth: Number of gear teeth around the circumference
     """
-    
-    def __init__(self, n=6, z_length=100.0, num_teeth=6):
+
+    def __init__(self, n=6, z_length=100.0, num_teeth=6, tooth_height=10):
         self.n = n
         self.z_length = z_length
         self.num_teeth = num_teeth
-        
+        self.tooth_height = tooth_height
+
         # Carbon-carbon bond length in graphene/nanotubes (angstroms)
         self.acc = 1.413
-        
+
     def calculate_cnt_radius(self):
         """Calculate the radius of an armchair (n,n) nanotube"""
         # For armchair nanotubes (n,n), radius = n * sqrt(3) * acc / pi
         return self.n * math.sqrt(3) * self.acc / (2*math.pi)
-    
+
     def calculate_distance(self, atom1, atom2):
         """Calculate distance between two atoms"""
         x1, y1, z1 = atom1.getX().angstrom.value, atom1.getY().angstrom.value, atom1.getZ().angstrom.value
         x2, y2, z2 = atom2.getX().angstrom.value, atom2.getY().angstrom.value, atom2.getZ().angstrom.value
         return math.sqrt((x2-x1)**2 + (y2-y1)**2 + (z2-z1)**2)
-    
-    def generate_lonsdaleite_tooth(self, orientation_angle, radius, tooth_height):
-        """
-        Generate a single lonsdaleite tooth structure.
-        Lonsdaleite is hexagonal diamond with ABAB stacking.
-        
-        orientation_angle: angle around nanotube axis
-        radius: CNT radius for proper attachment
-        tooth_height: Radial extension from CNT surface
-        """
-        atoms = []
-        atom_grid = {}
- 
-        axial_length = self.z_length
 
-        x_step_size = self.acc*math.sqrt(3)/2
-
-        # TODO: use a_lons and c_lons
-
-        # Number of layers for lonsdaleite structure
-        layer_height = self.acc # TODO: make this more accurate to account for "bumps"
-        num_layers = int(tooth_height / layer_height)
-        num_x_cells = 3 # TODO: calculate or pass in
-        num_z_cells = int(self.z_length / (self.acc * 1.5))
-
-        # Create lonsdaleite hexagonal layers
-        for layer in range(num_layers):
-            # Radial distance from CNT center
-            r = radius + layer * layer_height
-            
-            layer_y = r*math.sin(orientation_angle)
-            layer_x = r*math.cos(orientation_angle)
-
-            for z_idx in range(num_z_cells + 1):  
-                start_x = -num_x_cells * x_step_size + x_step_size/2      
-                for ring_idx in range(2 * num_x_cells):
-                    x = start_x + ring_idx *x_step_size
-                    
-                    z = z_idx * self.acc * 1.5
-
-                    # Offset every other z-layer by half a ring position
-                    if z_idx % 2 == 1:
-                        x += x_step_size
-
-                    # Offset every other atom on-axis 
-                    if ring_idx % 2 == 1:
-                        # adjust by cos(60)*acc (= acc/2)
-                        z = z + self.acc/2
-                
-                    # modify y up or down based on grid
-                    y_layer_mod = (-1) if layer % 2 == 0 else 1
-                    z_layer_mod = (-1) if (ring_idx % 2 == z_idx % 2) else 1
-                    y = y_layer_mod * z_layer_mod * self.acc/6
-
-                    s = math.sin(orientation_angle + math.pi/2)
-                    c = math.cos(orientation_angle + math.pi/2)
-
-                    point_x = layer_x + x * c + y * s
-                    point_y = layer_y + x * s + y * c
-                    point_z = z
-
-                    atom = SBAtom(
-                        SBElement.Carbon,
-                        SBQuantity.angstrom(point_x),
-                        SBQuantity.angstrom(point_y),
-                        SBQuantity.angstrom(point_z)
-                    )
-                    atoms.append(atom)
-                    atom_grid[(ring_idx, layer, z_idx)] = atom
-
-        return atoms, atom_grid, (num_x_cells, num_layers, num_z_cells)
-    
-    def create_tooth_bonds(self, tooth_atoms, tooth_grid, cell_structure, structural_model):
-        """Create bonds within a tooth structure"""
-        SAMSON.beginHolding("Create tooth bonds")
-        
-        (num_x_cells, num_y_cells, num_z_cells) = cell_structure
-
-        for y_idx in range(num_y_cells):
-            for z_idx in range(num_z_cells + 1):
-                for ring_idx in range(2 * num_x_cells):
-                    current_atom = tooth_grid.get((ring_idx, y_idx, z_idx))
-                    
-                    if current_atom is None:
-                        continue
-                    
-                    # Bond to next atom in ring (circumferential)
-                    next_ring_idx = ring_idx + 1
-                    if next_ring_idx < 2*num_x_cells:
-                        next_atom = tooth_grid.get((next_ring_idx, y_idx, z_idx))
-                    
-                        if next_atom is not None:
-                            bond = SBBond(current_atom, next_atom, 1.0)
-                            SAMSON.hold(bond)
-                            bond.create()
-                            structural_model.addChild(bond)
-                    
-                    # Bond to atoms in next z-layer (axial)
-                    if (ring_idx % 2 == 1) and (z_idx < num_z_cells):
-                        ring_offset = (-1) if (z_idx % 2 == 0) else 1
-                        bonding_ring_idx = ring_idx + ring_offset
-                        # Connect to corresponding atom in next layer
-                        next_z_atom = tooth_grid.get((bonding_ring_idx, y_idx, z_idx + 1))
-                        if next_z_atom is not None:
-                            bond = SBBond(current_atom, next_z_atom, 1.0)
-                            SAMSON.hold(bond)
-                            bond.create()
-                            structural_model.addChild(bond)
-
-                    # layer-to-layer bonds for y
-                    y_layer_mod = (-1) if y_idx % 2 == 0 else 1
-                    z_layer_mod = (-1) if (ring_idx % 2 == z_idx % 2) else 1
-                    if y_layer_mod * z_layer_mod > 0:
-                        next_y_atom = tooth_grid.get((ring_idx, y_idx + 1, z_idx))
-                        if next_y_atom is not None:
-                            bond = SBBond(current_atom, next_y_atom, 1.0)
-                            SAMSON.hold(bond)
-                            bond.create()
-                            structural_model.addChild(bond)
-                
-        SAMSON.endHolding()
-    
     def bond_tooth_to_cnt(self, tooth_atoms, tooth_grid, tooth_grid_structure, cnt_atoms, structural_model):
         """Bond tooth base atoms to nearest CNT surface atoms"""
         SAMSON.beginHolding("Bond tooth to CNT")
-        
+
         (num_x_cells, num_y_cells, num_z_cells) = tooth_grid_structure
 
         # only seek to bond the first layer
         for z_idx in range(num_z_cells + 1):
-            for ring_idx in range(2 * num_x_cells):
+            for ring_idx in range(2 * num_x_cells + 1):
                 tooth_atom = tooth_grid.get((ring_idx, 0, z_idx))
-        
+                if tooth_atom is None:
+                    continue
+
                 min_dist = float('inf')
                 closest_cnt_atom = None
-                
+
                 for cnt_atom in cnt_atoms:
+                    if cnt_atom is None:
+                        continue
                     dist = self.calculate_distance(tooth_atom, cnt_atom)
                     if dist < min_dist:
                         min_dist = dist
                         closest_cnt_atom = cnt_atom
-                
+
                 # Create bond if reasonably close
                 # TODO: may want to merge instead
                 if closest_cnt_atom and min_dist < 3.0:
@@ -185,67 +70,79 @@ class CNTGearGenerator:
                     SAMSON.hold(bond)
                     bond.create()
                     structural_model.addChild(bond)
-        
+
         SAMSON.endHolding()
 
     def attach_teeth_to_cnt(self, structural_model, cnt_atoms, radius, tooth_height):
         """Attach lonsdaleite teeth to the nanotube at specified positions"""
-                
+
         # TODO: determine angle offset to line up with cnt grid
         tooth_phase_offset = 0
 
         SAMSON.beginHolding("Add gear teeth")
-        
+        rotation_axis = SBVector3(0, 0, 1)
+        translation_vector = samson.SBPhysicalVector3(SBQuantity.angstrom(0),
+                                                        SBQuantity.angstrom(radius + self.acc),
+                                                        SBQuantity.angstrom(0))
+
         for tooth_idx in range(self.num_teeth):
             angle = 2 * math.pi * tooth_idx / self.num_teeth + tooth_phase_offset
-            
-            # Generate tooth structure
-            tooth_atoms, tooth_grid, tooth_cell_sizes = self.generate_lonsdaleite_tooth(
-                angle,
-                radius,
-                tooth_height
-            )
-            
-            # Add tooth atoms to structural model
-            for atom in tooth_atoms:
-                SAMSON.hold(atom)
-                atom.create()
-                structural_model.addChild(atom)
-            
-            # Create bonds within tooth structure
-            self.create_tooth_bonds(tooth_atoms, tooth_grid, tooth_cell_sizes, structural_model)
-            
+            rotation_angle = SBQuantity.radian(angle)
+
+            tooth_width = 6 # TODO: calculate?
+            ingot = lonsdaleite_ingot.LonsdaleiteIngot(tooth_width, tooth_height, self.z_length)
+            ingot_model, ingot_atoms, ingot_grid, ingot_cell_structure = ingot.generate_ingot()
+            ingot_model.translate(translation_vector)
+            ingot_model.rotate(rotation_axis, rotation_angle)
+
             # Find and bond closest CNT atoms to tooth base
-            self.bond_tooth_to_cnt(tooth_atoms, tooth_grid, tooth_cell_sizes, cnt_atoms, structural_model)
-        
+            self.bond_tooth_to_cnt(ingot_atoms, ingot_grid, ingot_cell_structure, cnt_atoms, structural_model)
+
+
+            document = SAMSON.getActiveDocument()
+            SAMSON.beginHolding(f"Create CNT Gear n={self.n}")
+            SAMSON.hold(ingot_model)
+            document.addChild(ingot_model)
+            SAMSON.endHolding()
+
         SAMSON.endHolding()
-    
+
     def generate_gear(self):
         """Main method to generate complete CNT gear"""
         print(f"Generating CNT gear: n={self.n}, length={self.z_length}Å, teeth={self.num_teeth}")
 
+        if self.n % self.num_teeth != 0:
+            print("number of teeth is not a factor of CNT parameter N")
+            print("Tooth alignment may not be optimal")
+
+        structural_model = SBStructuralModel()
+        structural_model.name = f"gear"
+        structural_model.create()
+
         # Generate base CNT structure
         cnt = armchair_cnt.CNTGenerator(self.n, self.z_length)
-        structural_model, cnt_atoms, radius = cnt.generate_armchair_cnt()
-        
+        _, cnt_atoms, radius = cnt.generate_armchair_cnt(structural_model)
+
         # Attach teeth
-        tooth_height = 10 # angstroms
-        self.attach_teeth_to_cnt(structural_model, cnt_atoms, radius, tooth_height)
-        
+        self.attach_teeth_to_cnt(structural_model, cnt_atoms, radius, self.tooth_height)
+
         # Add to document
         document = SAMSON.getActiveDocument()
         SAMSON.beginHolding(f"Create CNT Gear n={self.n}")
         SAMSON.hold(structural_model)
         document.addChild(structural_model)
         SAMSON.endHolding()
-        
+
         print("CNT gear generation complete!")
         return structural_model
 
 
 # Example usage
 if __name__ == "__main__":
-    # Create a gear with n=12 (armchair CNT), 30 angstrom length, 6 teeth
-    generator = CNTGearGenerator(n=12, z_length=30.0, num_teeth=6)
+    n = int(input("Gearshaft CNT N: "))
+    z_length = float(input("Gear length (Angstroms): "))
+    num_teeth = int(input("num teeth: "))
+    tooth_height = float(input("Tooth height (Angstroms): "))
+
+    generator = CNTGearGenerator(n, z_length, num_teeth, tooth_height)
     gear = generator.generate_gear()
-    

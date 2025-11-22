@@ -128,7 +128,7 @@ class CNTGenerator:
 
 if __name__ == "__main__":
 	n = int(input("carbon nanotube N: "))
-	z_length = int(input("carbon nanotube length (Angstroms): "))
+	z_length = float(input("carbon nanotube length (Angstroms): "))
 	generator = CNTGenerator(n, z_length)
 	structural_model, _, _ = generator.generate_armchair_cnt()
 
