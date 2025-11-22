@@ -2,3 +2,4 @@
 *.restart
 log.lammps
 *.lammpstrj
+__pycache__

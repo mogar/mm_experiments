@@ -13,13 +13,11 @@ class CNTGenerator:
     Parameters:
     - n: Chiral index for armchair nanotube (M=0 means armchair: (n,n))
     - z_length: Length of nanotube in angstroms
-    - num_teeth: Number of gear teeth around the circumference
     """
     
-    def __init__(self, n=6, z_length=100.0, num_teeth=6):
+    def __init__(self, n=6, z_length=100.0):
         self.n = n
         self.z_length = z_length
-        self.num_teeth = num_teeth
         
         # Carbon-carbon bond length in graphene/nanotubes (angstroms)
         self.acc = 1.413
@@ -86,11 +84,11 @@ class CNTGenerator:
         SAMSON.endHolding()
         
         # Create bonds
-        self.create_cnt_bonds(atoms, atom_grid, num_z_cells, structural_model)
+        self.create_cnt_bonds(structural_model, atoms, atom_grid, num_z_cells)
         
         return structural_model, atoms, radius
     
-    def create_cnt_bonds(self, atoms, atom_grid, num_z_cells, structural_model):
+    def create_cnt_bonds(self, structural_model, atoms, atom_grid, num_z_cells):
         """Create bonds for the carbon nanotube"""
         SAMSON.beginHolding("Create CNT bonds")
         

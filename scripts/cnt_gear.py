@@ -6,6 +6,8 @@ Generates armchair (n,n) nanotubes with lonsdaleite teeth for molecular gears
 import math
 from samson import *
 
+import armchair_cnt
+
 class CNTGearGenerator:
     """
     Generates carbon nanotube-based molecular gears with lonsdaleite teeth.
@@ -24,109 +26,10 @@ class CNTGearGenerator:
         # Carbon-carbon bond length in graphene/nanotubes (angstroms)
         self.acc = 1.413
         
-        # Lonsdaleite lattice parameters
-        self.a_lons = 2.52  # Lattice parameter in angstroms
-        self.c_lons = 4.12  # c-axis parameter for hexagonal structure
-        
     def calculate_cnt_radius(self):
         """Calculate the radius of an armchair (n,n) nanotube"""
         # For armchair nanotubes (n,n), radius = n * sqrt(3) * acc / pi
         return self.n * math.sqrt(3) * self.acc / (2*math.pi)
-    
-    def generate_armchair_cnt(self):
-        """
-        Generate an armchair carbon nanotube using SAMSON's coordinate generation.
-        For an armchair (n,n) nanotube, we create the structure programmatically.
-        """
-        radius = self.calculate_cnt_radius()
-        
-        # Create structural model
-        structural_model = SBStructuralModel()
-        structural_model.create()
-        
-        # Number of unit cells along z-axis
-        num_z_cells = int(self.z_length / (self.acc * 1.5))
-        
-        atoms = []
-        atom_grid = {}  # For tracking atoms by (ring_index, z_index) for bonding
-        
-        # Generate atoms
-        for z_idx in range(num_z_cells + 1):            
-            for ring_idx in range(2 * self.n):
-                theta = 2 * math.pi * ring_idx / (2 * self.n)
-                
-                z = z_idx * self.acc * 1.5
-
-                # Offset every other z-layer by half a ring position
-                if z_idx % 2 == 1:
-                    theta += 2 * math.pi / (2 * self.n)
-
-                # Offset every other atom on-axis 
-                if ring_idx % 2 == 1:
-                    # adjust by cos(60)*acc (= acc/2)
-                    z = z + self.acc/2
-                
-                x = radius * math.cos(theta)
-                y = radius * math.sin(theta)
-                
-                # Create carbon atom
-                atom = SBAtom(
-                    SBElement.Carbon,
-                    SBQuantity.angstrom(x),
-                    SBQuantity.angstrom(y),
-                    SBQuantity.angstrom(z)
-                )
-                
-                atoms.append(atom)
-                atom_grid[(ring_idx, z_idx)] = atom
-        
-        # Add atoms to structural model
-        SAMSON.beginHolding("Create CNT atoms")
-        for atom in atoms:
-            SAMSON.hold(atom)
-            atom.create()
-            structural_model.addChild(atom)
-        SAMSON.endHolding()
-        
-        # Create bonds
-        self.create_cnt_bonds(atoms, atom_grid, num_z_cells, structural_model)
-        
-        return structural_model, atoms, radius
-    
-    def create_cnt_bonds(self, atoms, atom_grid, num_z_cells, structural_model):
-        """Create bonds for the carbon nanotube"""
-        SAMSON.beginHolding("Create CNT bonds")
-        
-        for z_idx in range(num_z_cells + 1):
-            for ring_idx in range(2 * self.n):
-                current_atom = atom_grid.get((ring_idx, z_idx))
-                
-                if current_atom is None:
-                    continue
-                
-                # Bond to next atom in ring (circumferential)
-                next_ring_idx = (ring_idx + 1) % (2 * self.n)
-                next_atom = atom_grid.get((next_ring_idx, z_idx))
-                
-                if next_atom is not None:
-                    bond = SBBond(current_atom, next_atom, 1.0)
-                    SAMSON.hold(bond)
-                    bond.create()
-                    structural_model.addChild(bond)
-                
-                # Bond to atoms in next z-layer (axial)
-                if (ring_idx % 2 == 1) and (z_idx < num_z_cells):
-                    ring_offset = (-1) if (z_idx % 2 == 0) else 1
-                    bonding_ring_idx = (ring_idx + ring_offset) % (2 * self.n)
-                    # Connect to corresponding atom in next layer
-                    next_z_atom = atom_grid.get((bonding_ring_idx, z_idx + 1))
-                    if next_z_atom is not None:
-                        bond = SBBond(current_atom, next_z_atom, 1.0)
-                        SAMSON.hold(bond)
-                        bond.create()
-                        structural_model.addChild(bond)
-        
-        SAMSON.endHolding()
     
     def calculate_distance(self, atom1, atom2):
         """Calculate distance between two atoms"""
@@ -320,9 +223,10 @@ class CNTGearGenerator:
     def generate_gear(self):
         """Main method to generate complete CNT gear"""
         print(f"Generating CNT gear: n={self.n}, length={self.z_length}Å, teeth={self.num_teeth}")
-        
+
         # Generate base CNT structure
-        structural_model, cnt_atoms, radius = self.generate_armchair_cnt()
+        cnt = armchair_cnt.CNTGenerator(self.n, self.z_length)
+        structural_model, cnt_atoms, radius = cnt.generate_armchair_cnt()
         
         # Attach teeth
         tooth_height = 10 # angstroms
