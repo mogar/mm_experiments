@@ -76,36 +76,34 @@ class CNTGearGenerator:
     def attach_teeth_to_cnt(self, structural_model, cnt_atoms, radius, tooth_height):
         """Attach lonsdaleite teeth to the nanotube at specified positions"""
 
-        # TODO: determine angle offset to line up with cnt grid
-        tooth_phase_offset = 0
-
         SAMSON.beginHolding("Add gear teeth")
-        rotation_axis = SBVector3(0, 0, 1)
         translation_vector = samson.SBPhysicalVector3(SBQuantity.angstrom(0),
                                                         SBQuantity.angstrom(radius + self.acc),
                                                         SBQuantity.angstrom(0))
 
+        teeth = []
         for tooth_idx in range(self.num_teeth):
-            angle = 2 * math.pi * tooth_idx / self.num_teeth + tooth_phase_offset
-            rotation_angle = SBQuantity.radian(angle)
+            angle_rad = 2 * math.pi * tooth_idx / self.num_teeth
+            c, s = math.cos(angle_rad), math.sin(angle_rad)
 
             tooth_width = 6 # TODO: calculate?
             ingot = lonsdaleite_ingot.LonsdaleiteIngot(tooth_width, tooth_height, self.z_length)
             ingot_model, ingot_atoms, ingot_grid, ingot_cell_structure = ingot.generate_ingot()
-            ingot_model.translate(translation_vector)
-            ingot_model.rotate(rotation_axis, rotation_angle)
+
+            # translate/rotate molecule atom by atom
+            for atom in ingot_atoms:
+                position = atom.getPosition()
+                position += translation_vector
+                x, y, z = position[0], position[1], position[2]
+                new_position = SBPosition3(c*x - s*y, s*x + c*y, z)
+                atom.setPosition(new_position)
 
             # Find and bond closest CNT atoms to tooth base
             self.bond_tooth_to_cnt(ingot_atoms, ingot_grid, ingot_cell_structure, cnt_atoms, structural_model)
-
-
-            document = SAMSON.getActiveDocument()
-            SAMSON.beginHolding(f"Create CNT Gear n={self.n}")
-            SAMSON.hold(ingot_model)
-            document.addChild(ingot_model)
-            SAMSON.endHolding()
+            teeth.append(ingot_model)
 
         SAMSON.endHolding()
+        return teeth
 
     def generate_gear(self):
         """Main method to generate complete CNT gear"""
@@ -115,16 +113,27 @@ class CNTGearGenerator:
             print("number of teeth is not a factor of CNT parameter N")
             print("Tooth alignment may not be optimal")
 
+        SAMSON.beginHolding("Create Structural Model")
         structural_model = SBStructuralModel()
         structural_model.name = f"gear"
         structural_model.create()
+        SAMSON.endHolding()
 
         # Generate base CNT structure
         cnt = armchair_cnt.CNTGenerator(self.n, self.z_length)
-        _, cnt_atoms, radius = cnt.generate_armchair_cnt(structural_model)
+        cnt_molecule, cnt_atoms, radius = cnt.generate_armchair_cnt()
+
+        SAMSON.beginHolding("Add CNT to model")
+        structural_model.addChild(cnt_molecule)
+        SAMSON.endHolding()
 
         # Attach teeth
-        self.attach_teeth_to_cnt(structural_model, cnt_atoms, radius, self.tooth_height)
+        teeth = self.attach_teeth_to_cnt(structural_model, cnt_atoms, radius, self.tooth_height)
+
+        SAMSON.beginHolding("Add teeth to model")
+        for tooth in teeth:
+            structural_model.addChild(tooth)
+        SAMSON.endHolding()
 
         # Add to document
         document = SAMSON.getActiveDocument()

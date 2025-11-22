@@ -3,3 +3,4 @@
 log.lammps
 *.lammpstrj
 __pycache__
+.github/

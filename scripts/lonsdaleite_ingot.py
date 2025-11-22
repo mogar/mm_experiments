@@ -23,7 +23,7 @@ class LonsdaleiteIngot():
         # Carbon-carbon bond length in graphene/nanotubes (angstroms)
         self.acc = 1.413
 
-    def generate_ingot(self, structural_model = None):
+    def generate_ingot(self):
         """
         Generate a single lonsdaleite ingot structure.
         Lonsdaleite is hexagonal diamond with ABAB stacking.
@@ -31,11 +31,9 @@ class LonsdaleiteIngot():
         atoms = []
         atom_grid = {}
 
-        # Create structural model
-        if structural_model is None:
-            structural_model = SBStructuralModel()
-            structural_model.name = f"Lonsdaleite Ingot (w={self.x_width}, h={self.y_height}, l={self.z_length})"
-            structural_model.create()
+        molecular_model = SBMolecule()
+        molecular_model.name = f"Lonsdaleite Ingot (w={self.x_width}, h={self.y_height}, l={self.z_length})"
+        molecular_model.create()
 
         axial_length = self.z_length
 
@@ -82,13 +80,13 @@ class LonsdaleiteIngot():
                     atom_grid[(ring_idx, layer, z_idx)] = atom
                     SAMSON.hold(atom)
                     atom.create()
-                    structural_model.addChild(atom)
+                    molecular_model.addChild(atom)
 
         cell_structure = (num_x_cells, num_layers, num_z_cells)
-        self.create_ingot_bonds(atoms, atom_grid, cell_structure, structural_model)
-        return structural_model, atoms, atom_grid, cell_structure
+        self.create_ingot_bonds(molecular_model, atoms, atom_grid, cell_structure)
+        return molecular_model, atoms, atom_grid, cell_structure
 
-    def create_ingot_bonds(self, ingot_atoms, ingot_grid, cell_structure, structural_model):
+    def create_ingot_bonds(self, molecular_model, ingot_atoms, ingot_grid, cell_structure):
         """Create bonds within ingot structure"""
         SAMSON.beginHolding("Create ingot bonds")
 
@@ -111,7 +109,7 @@ class LonsdaleiteIngot():
                             bond = SBBond(current_atom, next_atom, 1.0)
                             SAMSON.hold(bond)
                             bond.create()
-                            structural_model.addChild(bond)
+                            molecular_model.addChild(bond)
 
                     # Bond to atoms in next z-layer (axial)
                     if (ring_idx % 2 != z_idx % 2) and (z_idx < num_z_cells):
@@ -123,7 +121,7 @@ class LonsdaleiteIngot():
                             bond = SBBond(current_atom, next_z_atom, 1.0)
                             SAMSON.hold(bond)
                             bond.create()
-                            structural_model.addChild(bond)
+                            molecular_model.addChild(bond)
 
                     # layer-to-layer bonds for y
                     y_layer_mod = (-1) if y_idx % 2 == 0 else 1
@@ -134,7 +132,7 @@ class LonsdaleiteIngot():
                             bond = SBBond(current_atom, next_y_atom, 1.0)
                             SAMSON.hold(bond)
                             bond.create()
-                            structural_model.addChild(bond)
+                            molecular_model.addChild(bond)
 
         SAMSON.endHolding()
 
@@ -143,7 +141,14 @@ if __name__ == "__main__":
     y_height = float(input("Ingot height (Angstroms): "))
     z_length = float(input("Ingot length (Angstroms): "))
     generator = LonsdaleiteIngot(x_width, y_height, z_length)
-    structural_model, _, _, _ = generator.generate_ingot()
+    molecular_model, _, _, _ = generator.generate_ingot()
+
+    SAMSON.beginHolding("Create Lonsdaleite Ingot Model")
+    structural_model = SBStructuralModel()
+    structural_model.name = f"Lonsdaleite Ingot (w={x_width}, h={y_height}, l={z_length})"
+    structural_model.create()
+    structural_model.addChild(molecular_model)
+    SAMSON.endHolding()
 
     # Add to document
     document = SAMSON.getActiveDocument()
