@@ -28,7 +28,7 @@ fix anchorfix anchor setforce 0.0 0.0 0.0 #first is ID = user-assigned name for 
 velocity anchor set 0.0 0.0 0.0
 
 #rotate roty group
-fix rotatebearing_fix roty move rotate -0.621 -0.524 1.396 0.0 0.0 1.0 250 
+fix rotatebearing_fix roty move rotate -0.646 -0.538 1.476 0.0 0.0 1.0 250 
 
 #output
 dump HCB_traj all atom 4 dump_nanotube_gear.lammpstrj
