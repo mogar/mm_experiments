@@ -4,10 +4,19 @@ Mostly experiments using [SAMSON](https://www.samson-connect.net/) to model simp
 
 Based on Tom Moore's [Diamond Machine Parts](https://github.com/mooreth/Diamond_Machine_Parts) projects.
 
+## Scripts
+
+Use the python files in the scripts directory to autogenerate larger structures. These can be triggered from within the python interpeter of SAMSON.
+
+Note that SAMSON's python interpreter will cache imported modules. If you want to iteratively make changes to the scripts, run these lines first to make sure local modules get re-loaded:
+
+```
+get_ipython().run_line_magic("load_ext", "autoreload")
+get_ipython().run_line_magic("autoreload", "2")  # Reload all modules before executing
+```
+
 ## Next steps
 
-* create molecules in classes, instead of structural models
-    * structural models should be created at a higher level, and molecules added to them
 
 ## Simulating with LAMMPS
 

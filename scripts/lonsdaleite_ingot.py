@@ -20,8 +20,22 @@ class LonsdaleiteIngot():
         self.y_height = y_height
         self.z_length = z_length
 
-        # Carbon-carbon bond length in graphene/nanotubes (angstroms)
-        self.acc = 1.413
+        # Carbon-carbon bond length in lonsdaleite (angstroms)
+        self.acc = 1.59
+        
+        # bond lengths (2D)
+        # planar y-vertical bonds = 1.59 angstroms
+        # planar y-vertical distance between columns = 0.575 angstroms
+        # planar y-vertical distance between lower and upper points of hexagon = bond length + 2 * 0.575 = 2.74 angstroms
+        self.y_adjust = 0.575/2
+        self.y_step = 1.59 + 0.575
+        # planar x-horizontal distance between columns = 2.513 angstroms
+        self.x_step = 2.513/2
+        # planar z-axial distance between layers = 2.909 angstroms
+        # planar z-axial bond length (ignoring off-axis length) = 1.4397 angstroms
+        # planar z-axial distance between lower and upper points of hexagon = bond length + 2 * 0.73465 = 2.909 angstroms
+        self.z_step = 1.4397 + 0.73465
+        self.z_adjust = 0.73465/2
 
     def generate_ingot(self):
         """
@@ -37,38 +51,34 @@ class LonsdaleiteIngot():
 
         axial_length = self.z_length
 
-        x_step_size = self.acc*math.sqrt(3)/2
-
         # Number of layers for lonsdaleite structure
-        layer_adjust = self.acc/6
-        layer_height = self.acc + 2 * layer_adjust
-        num_layers = int(self.y_height / layer_height)
-        num_x_cells = int(self.x_width / (x_step_size*2))
-        num_z_cells = int(self.z_length / (self.acc * 1.5))
+        num_layers = int(self.y_height / self.y_step) + 1
+        num_x_cells = int(self.x_width / (self.x_step*2))
+        num_z_cells = int(self.z_length / self.z_step)
 
         print(f"cell size: width={num_x_cells}, height={num_layers}, length={num_z_cells}")
 
         # Create lonsdaleite hexagonal layers
         for layer in range(num_layers):
             for z_idx in range(num_z_cells + 1):
-                start_x = -num_x_cells * x_step_size
+                start_x = -num_x_cells * self.x_step
                 for ring_idx in range(2 * num_x_cells + 1):
                     if (z_idx == 0):
                         if (ring_idx == 0) or (ring_idx == 2*num_x_cells):
                             # skip first and last carbons of first row because they'll dangle
                             continue
 
-                    x = start_x + ring_idx * x_step_size
-                    y = layer * layer_height
-                    z = self.acc/4 + z_idx * self.acc * 1.5
+                    x = start_x + ring_idx * self.x_step
+                    y = layer * self.y_step
+                    z = self.z_adjust + z_idx * self.z_step
 
                     # modify y up or down based on grid
                     y_layer_mod = (-1) if layer % 2 == 0 else 1
                     z_layer_mod = (-1) if (ring_idx % 2 == z_idx % 2) else 1
 
                     point_x = x
-                    point_y = y + y_layer_mod * z_layer_mod * layer_adjust
-                    point_z = z + z_layer_mod * self.acc/4
+                    point_y = y + y_layer_mod * z_layer_mod * self.y_adjust
+                    point_z = z + z_layer_mod * self.z_adjust
 
                     atom = SBAtom(
                         SBElement.Carbon,
