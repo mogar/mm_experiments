@@ -24,18 +24,11 @@ class LonsdaleiteIngot():
         self.acc = 1.59
         
         # bond lengths (2D)
-        # planar y-vertical bonds = 1.59 angstroms
-        # planar y-vertical distance between columns = 0.575 angstroms
-        # planar y-vertical distance between lower and upper points of hexagon = bond length + 2 * 0.575 = 2.74 angstroms
         self.y_adjust = 0.575/2
-        self.y_step = 1.59 + 0.575
-        # planar x-horizontal distance between columns = 2.513 angstroms
+        self.y_step = 1.59 +self.y_adjust*2
         self.x_step = 2.513/2
-        # planar z-axial distance between layers = 2.909 angstroms
-        # planar z-axial bond length (ignoring off-axis length) = 1.4397 angstroms
-        # planar z-axial distance between lower and upper points of hexagon = bond length + 2 * 0.73465 = 2.909 angstroms
-        self.z_step = 1.4397 + 0.73465
-        self.z_adjust = 0.73465/2
+        self.z_adjust = 0.3038
+        self.z_step = 1.5297 + self.z_adjust*2
 
     def generate_ingot(self):
         """

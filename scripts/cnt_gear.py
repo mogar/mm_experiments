@@ -65,7 +65,7 @@ class CNTGearGenerator:
 
                 # Create bond if reasonably close
                 # TODO: may want to merge instead
-                if closest_cnt_atom and min_dist < 3.0:
+                if closest_cnt_atom and min_dist < (self.acc * 1.1):
                     bond = SBBond(tooth_atom, closest_cnt_atom, 1.0)
                     SAMSON.hold(bond)
                     bond.create()
