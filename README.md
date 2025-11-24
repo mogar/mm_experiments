@@ -10,6 +10,7 @@ Use the python files in the scripts directory to autogenerate larger structures.
 
 Note that SAMSON's python interpreter will cache imported modules. If you want to iteratively make changes to the scripts, run these lines first to make sure local modules get re-loaded:
 
+- This doesn't seem to work actually. Gotta investigate more.
 ```
 get_ipython().run_line_magic("load_ext", "autoreload")
 get_ipython().run_line_magic("autoreload", "2")  # Reload all modules before executing
@@ -17,6 +18,8 @@ get_ipython().run_line_magic("autoreload", "2")  # Reload all modules before exe
 
 ## Next steps
 
+* slide clips
+* utilities script with calculate_atomic_distance, translate_molecule, rotate_molecule, etc.
 
 ## Simulating with LAMMPS
 
