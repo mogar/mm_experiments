@@ -21,6 +21,12 @@ get_ipython().run_line_magic("autoreload", "2")  # Reload all modules before exe
 * slide clips
 * utilities script with calculate_atomic_distance, translate_molecule, rotate_molecule, etc.
 
+## Future Experiments
+
+* rack and pinion
+* atomCAD
+* [planar pseudogears](http://apm.bplaced.net/w/index.php?title=Linear_reciprocative_pseudogears)
+
 ## Simulating with LAMMPS
 
 You'll need LAMMPS input scripts for this step. They can be adapted from the examples here, but the main simulation input especially may need adjustment for whatever motion you want to induce.
