@@ -28,6 +28,20 @@ class CNTGearGenerator:
         # Carbon-carbon bond length in graphene/nanotubes (angstroms)
         self.acc = 1.413
 
+    def remove_atom_and_bonds(self, atom):
+        parent = atom.getParent()
+        # collect bonds attached to the atom
+        bonds = []
+        for child in parent.getChildren():
+            if isinstance(child, SBBond) and (child.leftAtom is atom or child.rightAtom is atom):
+                bonds.append(child)
+
+        with SAMSON.holding("Remove atom and its bonds"):
+            for b in bonds:
+                b.getParent().removeChild(b)  # remove each bond
+            parent.removeChild(atom)          # finally remove the atom
+
+
     def calculate_cnt_radius(self):
         """Calculate the radius of an armchair (n,n) nanotube"""
         # For armchair nanotubes (n,n), radius = n * sqrt(3) * acc / pi
@@ -89,6 +103,17 @@ class CNTGearGenerator:
             tooth_width = 6 # TODO: calculate?
             ingot = lonsdaleite_ingot.LonsdaleiteIngot(tooth_width, tooth_height, self.z_length)
             ingot_model, ingot_atoms, ingot_grid, ingot_cell_structure = ingot.generate_ingot()
+            # remove first and last column of tool atoms
+            (num_x_cells, num_y_cells, num_z_cells) = ingot_cell_structure
+            for z_idx in range(num_z_cells + 1):
+                left_atom = ingot_grid.pop((0, num_y_cells - 1, z_idx), None)
+                if left_atom in ingot_atoms:
+                    ingot_atoms.remove(left_atom)
+                    self.remove_atom_and_bonds(left_atom)
+                right_atom = ingot_grid.pop((2 * num_x_cells, num_y_cells - 1, z_idx), None)
+                if right_atom in ingot_atoms:
+                    ingot_atoms.remove(right_atom)
+                    self.remove_atom_and_bonds(right_atom)
 
             # translate/rotate molecule atom by atom
             for atom in ingot_atoms:

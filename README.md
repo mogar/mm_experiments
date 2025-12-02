@@ -18,8 +18,8 @@ get_ipython().run_line_magic("autoreload", "2")  # Reload all modules before exe
 
 ## Next steps
 
-* slide clips
-* utilities script with calculate_atomic_distance, translate_molecule, rotate_molecule, etc.
+* linear gear teeth
+* utilities script with calculate_atomic_distance, translate_molecule, rotate_molecule, remove bond, etc.
 
 ## Future Experiments
 

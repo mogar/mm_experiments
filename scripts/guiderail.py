@@ -33,7 +33,7 @@ class GuideRailGenerator:
 
         self.clip_length = 10 # length of retaining clip that slides over the rail
         self.clip_height = 8  # height of clip to go over anchor ingot
-        self.clip_gap = 2     # gap between clip and rail
+        self.clip_gap = 5.2     # gap between clip and rail
 
         self.lons_z_adjust = 0.3038
         self.lons_z_step = SBQuantity.angstrom(1.5737 + self.lons_z_adjust)
@@ -311,7 +311,7 @@ class GuideRailGenerator:
                                                                  SBQuantity.angstrom(0)))
         right_wall_top_y = self.get_max_y_of_lonsdaleite(right_wall_grid, right_wall_cell_structure)
 
-        left_retaining_ingot = lonsdaleite_ingot.LonsdaleiteIngot(self.clip_height + self.clip_gap*2.5, self.clip_height, self.clip_length)
+        left_retaining_ingot = lonsdaleite_ingot.LonsdaleiteIngot(self.clip_height + self.clip_gap*1.4, self.clip_height, self.clip_length)
         left_retaining_model, left_retaining_atoms, left_retaining_grid, left_retaining_cell_structure = left_retaining_ingot.generate_ingot()
         left_retaining_model.name = "left retaining ingot"
         left_retaining_start_min_x = self.get_x_of_lonsdaleite(left_retaining_grid, left_retaining_cell_structure)
@@ -321,7 +321,7 @@ class GuideRailGenerator:
                                                                  SBQuantity.angstrom(0)))
         left_retaining_top_y = self.get_max_y_of_lonsdaleite(left_retaining_grid, left_retaining_cell_structure)
 
-        right_retaining_ingot = lonsdaleite_ingot.LonsdaleiteIngot(self.clip_height + self.clip_gap*2.5, self.clip_height, self.clip_length)
+        right_retaining_ingot = lonsdaleite_ingot.LonsdaleiteIngot(self.clip_height + self.clip_gap*1.4, self.clip_height, self.clip_length)
         right_retaining_model, right_retaining_atoms, right_retaining_grid, right_retaining_cell_structure = right_retaining_ingot.generate_ingot()
         right_retaining_model.name = "right retaining ingot"
         right_retaining_max_x = self.get_x_of_lonsdaleite(right_retaining_grid, right_retaining_cell_structure, operator.gt)
