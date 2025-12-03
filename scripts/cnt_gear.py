@@ -8,6 +8,7 @@ from samson import *
 
 import armchair_cnt
 import lonsdaleite_ingot
+import utilities
 
 class CNTGearGenerator:
     """
@@ -28,31 +29,6 @@ class CNTGearGenerator:
         # Carbon-carbon bond length in graphene/nanotubes (angstroms)
         self.acc = 1.413
 
-    def remove_atom_and_bonds(self, atom):
-        parent = atom.getParent()
-        # collect bonds attached to the atom
-        bonds = []
-        for child in parent.getChildren():
-            if isinstance(child, SBBond) and (child.leftAtom is atom or child.rightAtom is atom):
-                bonds.append(child)
-
-        with SAMSON.holding("Remove atom and its bonds"):
-            for b in bonds:
-                b.getParent().removeChild(b)  # remove each bond
-            parent.removeChild(atom)          # finally remove the atom
-
-
-    def calculate_cnt_radius(self):
-        """Calculate the radius of an armchair (n,n) nanotube"""
-        # For armchair nanotubes (n,n), radius = n * sqrt(3) * acc / pi
-        return self.n * math.sqrt(3) * self.acc / (2*math.pi)
-
-    def calculate_distance(self, atom1, atom2):
-        """Calculate distance between two atoms"""
-        x1, y1, z1 = atom1.getX().angstrom.value, atom1.getY().angstrom.value, atom1.getZ().angstrom.value
-        x2, y2, z2 = atom2.getX().angstrom.value, atom2.getY().angstrom.value, atom2.getZ().angstrom.value
-        return math.sqrt((x2-x1)**2 + (y2-y1)**2 + (z2-z1)**2)
-
     def bond_tooth_to_cnt(self, tooth_atoms, tooth_grid, tooth_grid_structure, cnt_atoms, structural_model):
         """Bond tooth base atoms to nearest CNT surface atoms"""
         SAMSON.beginHolding("Bond tooth to CNT")
@@ -72,7 +48,7 @@ class CNTGearGenerator:
                 for cnt_atom in cnt_atoms:
                     if cnt_atom is None:
                         continue
-                    dist = self.calculate_distance(tooth_atom, cnt_atom)
+                    dist = utilities.calculate_distance(tooth_atom, cnt_atom)
                     if dist < min_dist:
                         min_dist = dist
                         closest_cnt_atom = cnt_atom
@@ -109,12 +85,11 @@ class CNTGearGenerator:
                 left_atom = ingot_grid.pop((0, num_y_cells - 1, z_idx), None)
                 if left_atom in ingot_atoms:
                     ingot_atoms.remove(left_atom)
-                    self.remove_atom_and_bonds(left_atom)
+                    utilities.remove_atom_and_bonds(left_atom)
                 right_atom = ingot_grid.pop((2 * num_x_cells, num_y_cells - 1, z_idx), None)
                 if right_atom in ingot_atoms:
                     ingot_atoms.remove(right_atom)
-                    self.remove_atom_and_bonds(right_atom)
-
+                    utilities.remove_atom_and_bonds(right_atom)
             # translate/rotate molecule atom by atom
             for atom in ingot_atoms:
                 position = atom.getPosition()

@@ -6,6 +6,8 @@ Adds bonds between carbon atoms within a specified distance threshold
 from samson import *
 import math
 
+import utilities
+
 class CarbonBondCreator:
     """
     Creates bonds between carbon atoms that are within a specified distance.
@@ -19,30 +21,6 @@ class CarbonBondCreator:
         self.distance_threshold = distance_threshold
         self.bond_order = bond_order
         self.bonds_created = 0
-
-    def calculate_distance(self, atom1, atom2):
-        """Calculate Euclidean distance between two atoms"""
-        x1 = atom1.getX().angstrom.value
-        y1 = atom1.getY().angstrom.value
-        z1 = atom1.getZ().angstrom.value
-
-        x2 = atom2.getX().angstrom.value
-        y2 = atom2.getY().angstrom.value
-        z2 = atom2.getZ().angstrom.value
-
-        return math.sqrt((x2-x1)**2 + (y2-y1)**2 + (z2-z1)**2)
-
-    def atoms_already_bonded(self, atom1, atom2):
-        """Check if two atoms are already bonded"""
-        # Get all bonds connected to atom1
-        bonds_indexer = atom1.getNodes('n.t b')
-
-        for bond in bonds_indexer:
-            # Check if this bond connects to atom2
-            if bond.getOppositeAtom(atom1) == atom2:
-                return True
-
-        return False
 
     def get_selected_carbon_atoms(self):
         """Get all selected carbon atoms from the active document"""
@@ -103,11 +81,11 @@ class CarbonBondCreator:
                 atom2 = carbon_atoms[j]
 
                 # Check if already bonded
-                if self.atoms_already_bonded(atom1, atom2):
+                if utilities.atoms_already_bonded(atom1, atom2):
                     continue
 
                 # Calculate distance
-                distance = self.calculate_distance(atom1, atom2)
+                distance = utilities.calculate_distance(atom1, atom2)
 
                 # Create bond if within threshold
                 if distance <= self.distance_threshold:
