@@ -5,6 +5,12 @@ from samson import *
 
 def calculate_distance(atom1, atom2):
     """Calculate Euclidean distance between two atoms"""
+    if atom1 is None or atom2 is None:
+        # "Cannot calculate distance: one or both atoms are None"
+        return float('inf')
+    if not isinstance(atom1, SBAtom) or not isinstance(atom2, SBAtom):
+        # "Both inputs must be SBAtom instances"
+        return float('inf')
     x1, y1, z1 = atom1.getX().angstrom.value, atom1.getY().angstrom.value, atom1.getZ().angstrom.value
     x2, y2, z2 = atom2.getX().angstrom.value, atom2.getY().angstrom.value, atom2.getZ().angstrom.value
     return math.sqrt((x2-x1)**2 + (y2-y1)**2 + (z2-z1)**2)

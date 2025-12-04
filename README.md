@@ -18,8 +18,9 @@ get_ipython().run_line_magic("autoreload", "2")  # Reload all modules before exe
 
 ## Next steps
 
-* linear gear teeth
-* utilities script with calculate_atomic_distance, translate_molecule, rotate_molecule, remove bond, etc.
+* utility to delete atoms with a single bond (then apply to teeth of rack)
+* need a more robust gear - CNT as central cylinder isn't stable
+* experiment with vDW forces for linear rails, instead of dovetail
 
 ## Future Experiments
 
@@ -33,11 +34,11 @@ You'll need LAMMPS input scripts for this step. They can be adapted from the exa
 
 These simulations also rely on a CH.airebo file (can remain unchanged).
 
-. [Install LAMMPS](https://docs.lammps.org/Install.html)
-. Before exporting your SAMSON model, minimize it pretty well. The SAMSON minimizer can deal with larger divergences than LAMMPS can.
-. Export your SAMSON model using a SAMSON2LAMMPS python script.
-  . You can modify the examples in this repo for different atom groups as needed.
-. Run LAMMPS to minimize energy, bring to temperature, and then simulate your structure
-  . `lmps -in ./Energy_min.input`
-  . `lmps -in ./Bring_to_temp.input`
-  . `lmps -in ./simulation.input`
+* [Install LAMMPS](https://docs.lammps.org/Install.html)
+* Before exporting your SAMSON model, minimize it pretty well. The SAMSON minimizer can deal with larger divergences than LAMMPS can.
+* Export your SAMSON model using a SAMSON2LAMMPS python script.
+  * You can modify the examples in this repo for different atom groups as needed.
+* Run LAMMPS to minimize energy, bring to temperature, and then simulate your structure
+  * `lmps -in ./Energy_min.input`
+  * `lmps -in ./Bring_to_temp.input`
+  * `lmps -in ./simulation.input`
