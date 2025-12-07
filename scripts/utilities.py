@@ -3,6 +3,19 @@ import math, operator
 from samson import *
 
 
+def get_selected_carbon_atoms(self):
+    """Get all selected carbon atoms from the active document"""
+    # Get all selected atoms
+    selected_atoms = SAMSON.getNodes('node.type atom and node.selected')
+
+    # Filter for carbon atoms only
+    carbon_atoms = []
+    for atom in selected_atoms:
+        if atom.elementType == SBElement.Carbon:
+            carbon_atoms.append(atom)
+
+    return carbon_atoms
+
 def calculate_distance(atom1, atom2):
     """Calculate Euclidean distance between two atoms"""
     if atom1 is None or atom2 is None:

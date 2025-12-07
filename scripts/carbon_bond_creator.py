@@ -22,19 +22,6 @@ class CarbonBondCreator:
         self.bond_order = bond_order
         self.bonds_created = 0
 
-    def get_selected_carbon_atoms(self):
-        """Get all selected carbon atoms from the active document"""
-        # Get all selected atoms
-        selected_atoms = SAMSON.getNodes('node.type atom and node.selected')
-
-        # Filter for carbon atoms only
-        carbon_atoms = []
-        for atom in selected_atoms:
-            if atom.elementType == SBElement.Carbon:
-                carbon_atoms.append(atom)
-
-        return carbon_atoms
-
     def create_bonds(self):
         """
         Main method to create bonds between nearby carbon atoms.
@@ -43,7 +30,7 @@ class CarbonBondCreator:
         print(f"Starting bond creation with distance threshold: {self.distance_threshold} Å")
 
         # Get selected carbon atoms
-        carbon_atoms = self.get_selected_carbon_atoms()
+        carbon_atoms = utilities.get_selected_carbon_atoms()
         num_atoms = len(carbon_atoms)
 
         print(f"Found {num_atoms} selected carbon atoms")
