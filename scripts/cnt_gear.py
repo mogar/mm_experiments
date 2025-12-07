@@ -7,7 +7,7 @@ import math
 from samson import *
 
 import armchair_cnt
-import lonsdaleite_ingot
+import lonsdaleite_tooth
 import utilities
 
 class CNTGearGenerator:
@@ -76,8 +76,8 @@ class CNTGearGenerator:
             c, s = math.cos(angle_rad), math.sin(angle_rad)
 
             tooth_width = 6 # TODO: calculate?
-            ingot = lonsdaleite_ingot.LonsdaleiteIngot(tooth_width, tooth_height, self.z_length)
-            ingot_model, ingot_atoms, ingot_grid, ingot_cell_structure = ingot.generate_ingot()
+            ingot = lonsdaleite_tooth.LonsdaleiteTooth(tooth_width, tooth_height, self.z_length, taper_x=True, taper_z=False)
+            ingot_model, ingot_atoms, ingot_grid, ingot_cell_structure = ingot.generate_tooth()
             # remove first and last column of tool atoms
             (num_x_cells, num_y_cells, num_z_cells) = ingot_cell_structure
             for z_idx in range(num_z_cells + 1):
@@ -133,6 +133,8 @@ class CNTGearGenerator:
         for tooth in teeth:
             structural_model.addChild(tooth)
         SAMSON.endHolding()
+
+        utilities.remove_dangling_carbons(structural_model)
 
         # Add to document
         document = SAMSON.getActiveDocument()

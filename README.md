@@ -18,10 +18,6 @@ get_ipython().run_line_magic("autoreload", "2")  # Reload all modules before exe
 
 ## Next steps
 
-* better gear tooth generator
-  * symmetric tapering shape
-* utility to delete atoms with a single bond (then apply to teeth of rack)
-* need a more robust gear - CNT as central cylinder isn't stable
 * experiment with vDW forces for linear rails, instead of dovetail
 
 ## Future Experiments

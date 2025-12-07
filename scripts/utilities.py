@@ -60,6 +60,25 @@ def remove_atom_and_bonds(atom):
             b.getParent().removeChild(b)  # remove each bond
         parent.removeChild(atom)          # finally remove the atom
 
+def remove_dangling_carbons(molecular_model):
+    """Remove carbon atoms with only one bond from the molecular model"""
+    atoms_to_remove = []
+    for atom in molecular_model.getChildren():
+        if isinstance(atom, SBAtom) and atom.elementType == SBElement.Carbon:
+            # Count bonds connected to this atom
+            bond_count = 0
+            for child in molecular_model.getChildren():
+                if isinstance(child, SBBond) and (child.leftAtom is atom or child.rightAtom is atom):
+                    bond_count += 1
+                    if bond_count > 1:
+                        break  # No need to count further
+            if bond_count <= 1:
+                atoms_to_remove.append(atom)
+
+    with SAMSON.holding("Remove dangling carbon atoms"):
+        for atom in atoms_to_remove:
+            remove_atom_and_bonds(atom)
+
 def get_x_of_lonsdaleite(ingot_grid, ingot_cell_structure, comparison=operator.lt):
     """Get minimum x coordinate of lonsdaleite ingot."""
     (x_cells, y_cells, z_cells) = ingot_cell_structure
@@ -91,12 +110,12 @@ def get_y_of_lonsdaleite(ingot_grid, ingot_cell_structure, comparison=operator.l
     else:
         y_idx = y_cells - 1
 
-    # we only look at the first 9 atoms on the face
+    # we only look at the first 3 rows of atoms on the face
     # if the ingot is smaller than that, we just look at whatever is there
     # since the ingot's face has two separate heights, and we may be missing atoms
-    # near the corners, checking 9 positions should be sufficient
-    for x_idx in range(3):
-        for z_idx in range(3):
+    # near the edges, checking a few rows should be sufficient
+    for x_idx in range(2*x_cells + 1):
+        for z_idx in range(z_cells + 1):
             atom = ingot_grid.get((x_idx, y_idx, z_idx))
             if atom is not None:
                 position = atom.getPosition()

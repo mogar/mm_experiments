@@ -6,7 +6,7 @@ along the height of the tooth, subject to the constraint that the tooth remains 
 and the lonsdaleite unit cells are preserved.
 """
 
-import math
+import math, operator
 from samson import *
 
 import utilities
@@ -17,15 +17,17 @@ class LonsdaleiteTooth:
     Generates a single lonsdaleite tooth structure.
 
     Parameters:
-    - tooth_width: Width of the tooth at its base (angstroms)
+    - tooth_width: Width of the tooth (angstroms)
     - tooth_height: Height of the tooth (angstroms)
-    - tooth_length: Length of the tooth along the z-axis (angstroms)
+    - tooth_length: Length of the tooth along the z-axis at its base (angstroms)
     """
 
-    def __init__(self, tooth_width, tooth_height, tooth_length=12.0):
+    def __init__(self, tooth_width, tooth_height, tooth_length=12.0, taper_x=True, taper_z=True):
         self.tooth_width = tooth_width
         self.tooth_height = tooth_height
         self.tooth_length = tooth_length
+        self.taper_x = taper_x
+        self.taper_z = taper_z
 
         # Carbon-carbon bond length in lonsdaleite (angstroms)
         self.acc = 1.59
@@ -41,7 +43,7 @@ class LonsdaleiteTooth:
         """
         Generate a single lonsdaleite tooth structure.
         Lonsdaleite is hexagonal diamond with ABAB stacking.
-        Tooth tapers from self.tooth_width at base to a point at the top.
+        Tooth tapers from self.tooth_length at base to a point at the top.
         """
         atoms = []
         atom_grid = {}
@@ -59,16 +61,30 @@ class LonsdaleiteTooth:
 
         print(f"cell size: width={num_x_cells}, height={num_layers}, length={num_z_cells}")
 
+        added_layer = False
         # Create lonsdaleite hexagonal layers
         for layer in range(num_layers):
             layer_y = layer * self.y_step
             layer_width = self.tooth_width * (1 - ((layer - 1) / num_layers))
+            layer_length = self.tooth_length * (1 - ((layer) / num_layers))
             
-            layer_x_cells = 2*int(layer_width / (self.x_step*2))
+            layer_x_cells = 2*num_x_cells
+            if self.taper_x:
+                layer_x_cells = 2*int(layer_width / (self.x_step*2))
+            layer_z_cells = num_z_cells
+            if self.taper_z:
+                layer_z_cells = int(layer_length / self.z_step)
+            
             ignore_ring_x_low = (2*num_x_cells - layer_x_cells) // 2
             ignore_ring_x_high = 2*num_x_cells - ignore_ring_x_low
 
-            for z_idx in range(num_z_cells + 1):
+            ignore_ring_z_low = (num_z_cells - layer_z_cells) // 2
+            ignore_ring_z_high = num_z_cells - ignore_ring_z_low
+
+            for z_idx in range(num_z_cells + 1):                
+                if z_idx < ignore_ring_z_low or z_idx > ignore_ring_z_high:
+                    continue  # skip atoms outside tapered width
+
                 start_x = -num_x_cells * self.x_step
                 for ring_idx in range(2 * num_x_cells + 1):
                     if ring_idx < ignore_ring_x_low or ring_idx > ignore_ring_x_high:
@@ -96,6 +112,9 @@ class LonsdaleiteTooth:
                     SAMSON.hold(atom)
                     atom.create()
                     molecular_model.addChild(atom)
+                    added_layer = True
+            if not added_layer:
+                print(f"Warning: No atoms added for layer {layer}, tooth may be too narrow.")
 
         cell_structure = (num_x_cells, num_layers, num_z_cells)
         lonsdaleite_ingot.create_lonsdaleite_bonds(molecular_model, atoms, atom_grid, cell_structure)
@@ -106,7 +125,9 @@ if __name__ == "__main__":
     y_height = float(input("Tooth height (Angstroms): "))
     z_length = float(input("Tooth length (Angstroms): "))
     generator = LonsdaleiteTooth(x_width, y_height, z_length)
-    molecular_model, _, _, _ = generator.generate_tooth()
+    molecular_model, tooth_atoms, tooth_grid, tooth_cell_structure = generator.generate_tooth()
+
+    print(utilities.get_y_of_lonsdaleite(tooth_grid, tooth_cell_structure, comparison=operator.gt))
 
     SAMSON.beginHolding("Create Lonsdaleite Tooth Model")
     structural_model = SBStructuralModel()

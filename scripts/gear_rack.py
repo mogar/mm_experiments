@@ -7,7 +7,7 @@ import operator
 from samson import *
 
 import guiderail
-import lonsdaleite_ingot
+import lonsdaleite_tooth
 import utilities
 
 class GearRackGenerator:
@@ -91,31 +91,11 @@ class GearRackGenerator:
         # Generate the gear teeth clips
         print(f"Generating {self.num_teeth} rack teeth...")
         for tooth_idx in range(self.num_teeth):
-            ingot = lonsdaleite_ingot.LonsdaleiteIngot(self.anchor_width, tooth_height, tooth_width)
-            ingot_model, ingot_atoms, ingot_grid, ingot_cell_structure = ingot.generate_ingot()
-            # remove first and last column of tool atoms
-            (num_x_cells, num_y_cells, num_z_cells) = ingot_cell_structure
-            for x_idx in range(2*num_x_cells + 1):
-                left_atom = ingot_grid.pop((x_idx, num_y_cells - 1, 0), None)
-                if left_atom in ingot_atoms:
-                    ingot_atoms.remove(left_atom)
-                    utilities.remove_atom_and_bonds(left_atom)
-                right_atom = ingot_grid.pop((2 * num_x_cells, num_y_cells - 1, num_z_cells - 1), None)
-                if right_atom in ingot_atoms:
-                    ingot_atoms.remove(right_atom)
-                    utilities.remove_atom_and_bonds(right_atom)
-                if x_idx % 2 == 0:
-                    left_atom_neighbor = ingot_grid.pop((x_idx, num_y_cells - 2, 0), None)
-                    if left_atom_neighbor in ingot_atoms:
-                        ingot_atoms.remove(left_atom_neighbor)
-                        utilities.remove_atom_and_bonds(left_atom_neighbor)
-                if x_idx % 2 == 1:
-                    right_atom_neighbor = ingot_grid.pop((x_idx, num_y_cells - 1, num_z_cells), None)
-                    if right_atom_neighbor in ingot_atoms:
-                        ingot_atoms.remove(right_atom_neighbor)
-                        utilities.remove_atom_and_bonds(right_atom_neighbor)
+            print(f"Generating tooth. x-dim {self.anchor_width}, y-dim {tooth_height}, z-dim {tooth_width}")
+            tooth = lonsdaleite_tooth.LonsdaleiteTooth(self.anchor_width, tooth_height, tooth_width, taper_x=False, taper_z=True)
+            tooth_model, tooth_atoms, tooth_grid, tooth_cell_structure = tooth.generate_tooth()
             
-            top_y = utilities.get_y_of_lonsdaleite(ingot_grid, ingot_cell_structure, comparison=operator.gt)
+            top_y = utilities.get_y_of_lonsdaleite(tooth_grid, tooth_cell_structure, comparison=operator.gt)
             # translate/rotate molecule atom by atom
             z_translation_steps = tooth_idx * self.steps_per_tooth
             x_offset = 0
@@ -124,7 +104,7 @@ class GearRackGenerator:
             translation_vector = SBPhysicalVector3(SBQuantity.angstrom(x_offset * self.lons_x_step),
                                          -SBQuantity.angstrom(self.lons_y_step),
                                          SBQuantity.angstrom(z_translation_steps * self.lons_z_step))
-            for atom in ingot_atoms:
+            for atom in tooth_atoms:
                 position = atom.getPosition()
                 x, y, z = position[0], position[1], position[2]
                 x, y, z = c*x - s*y, s*x + c*y, z
@@ -134,9 +114,11 @@ class GearRackGenerator:
 
             # Find and bond closest CNT atoms to tooth base
             anchor_offset = (x_offset, 0, z_translation_steps)
-            self.bond_tooth_to_anchor(ingot_grid, ingot_cell_structure, rail_anchor_grid, rail_anchor_cell_structure, anchor_offset, rail)
+            self.bond_tooth_to_anchor(tooth_grid, tooth_cell_structure, rail_anchor_grid, rail_anchor_cell_structure, anchor_offset, rail)
 
-            rail.addChild(ingot_model)
+            rail.addChild(tooth_model)
+
+        utilities.remove_dangling_carbons(rail)
 
         SAMSON.endHolding()
 
