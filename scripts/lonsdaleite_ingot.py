@@ -5,6 +5,57 @@ Lonsdaleite Ingot Generator for SAMSON
 import math
 from samson import *
 
+
+def create_lonsdaleite_bonds(molecular_model, ingot_atoms, ingot_grid, cell_structure):
+    """Create bonds within ingot structure"""
+    SAMSON.beginHolding("Create ingot bonds")
+
+    (num_x_cells, num_y_cells, num_z_cells) = cell_structure
+
+    for y_idx in range(num_y_cells):
+        for z_idx in range(num_z_cells + 1):
+            for ring_idx in range(2 * num_x_cells + 1):
+                current_atom = ingot_grid.get((ring_idx, y_idx, z_idx))
+
+                if current_atom is None:
+                    continue
+
+                # Bond to next atom in "ring"
+                next_ring_idx = ring_idx + 1
+                if next_ring_idx < (2*num_x_cells + 1):
+                    next_atom = ingot_grid.get((next_ring_idx, y_idx, z_idx))
+
+                    if next_atom is not None:
+                        bond = SBBond(current_atom, next_atom, 1.0)
+                        SAMSON.hold(bond)
+                        bond.create()
+                        molecular_model.addChild(bond)
+
+                # Bond to atoms in next z-layer (axial)
+                if (ring_idx % 2 != z_idx % 2) and (z_idx < num_z_cells):
+                    ring_offset = 0 #(-1) if (z_idx % 2 == 0) else 1
+                    bonding_ring_idx = ring_idx + ring_offset
+                    # Connect to corresponding atom in next layer
+                    next_z_atom = ingot_grid.get((bonding_ring_idx, y_idx, z_idx + 1))
+                    if next_z_atom is not None:
+                        bond = SBBond(current_atom, next_z_atom, 1.0)
+                        SAMSON.hold(bond)
+                        bond.create()
+                        molecular_model.addChild(bond)
+
+                # layer-to-layer bonds for y
+                y_layer_mod = (-1) if y_idx % 2 == 0 else 1
+                z_layer_mod = (-1) if (ring_idx % 2 == z_idx % 2) else 1
+                if y_layer_mod * z_layer_mod > 0:
+                    next_y_atom = ingot_grid.get((ring_idx, y_idx + 1, z_idx))
+                    if next_y_atom is not None:
+                        bond = SBBond(current_atom, next_y_atom, 1.0)
+                        SAMSON.hold(bond)
+                        bond.create()
+                        molecular_model.addChild(bond)
+
+    SAMSON.endHolding()
+
 class LonsdaleiteIngot():
     """
     Generates lonsdaleite ingots.
@@ -53,8 +104,12 @@ class LonsdaleiteIngot():
 
         # Create lonsdaleite hexagonal layers
         for layer in range(num_layers):
+            y = layer * self.y_step
+
             for z_idx in range(num_z_cells + 1):
                 start_x = -num_x_cells * self.x_step
+                # ring terminology is used because we treat lonsdaleite like an unwrapped carbon nanotube
+                # this makes it easier to reason about bonding patterns
                 for ring_idx in range(2 * num_x_cells + 1):
                     if (z_idx == 0):
                         if (ring_idx == 0) or (ring_idx == 2*num_x_cells):
@@ -62,7 +117,6 @@ class LonsdaleiteIngot():
                             continue
 
                     x = start_x + ring_idx * self.x_step
-                    y = layer * self.y_step
                     z = self.z_adjust + z_idx * self.z_step
 
                     # modify y up or down based on grid
@@ -86,58 +140,8 @@ class LonsdaleiteIngot():
                     molecular_model.addChild(atom)
 
         cell_structure = (num_x_cells, num_layers, num_z_cells)
-        self.create_ingot_bonds(molecular_model, atoms, atom_grid, cell_structure)
+        create_lonsdaleite_bonds(molecular_model, atoms, atom_grid, cell_structure)
         return molecular_model, atoms, atom_grid, cell_structure
-
-    def create_ingot_bonds(self, molecular_model, ingot_atoms, ingot_grid, cell_structure):
-        """Create bonds within ingot structure"""
-        SAMSON.beginHolding("Create ingot bonds")
-
-        (num_x_cells, num_y_cells, num_z_cells) = cell_structure
-
-        for y_idx in range(num_y_cells):
-            for z_idx in range(num_z_cells + 1):
-                for ring_idx in range(2 * num_x_cells + 1):
-                    current_atom = ingot_grid.get((ring_idx, y_idx, z_idx))
-
-                    if current_atom is None:
-                        continue
-
-                    # Bond to next atom in ring (circumferential)
-                    next_ring_idx = ring_idx + 1
-                    if next_ring_idx < (2*num_x_cells + 1):
-                        next_atom = ingot_grid.get((next_ring_idx, y_idx, z_idx))
-
-                        if next_atom is not None:
-                            bond = SBBond(current_atom, next_atom, 1.0)
-                            SAMSON.hold(bond)
-                            bond.create()
-                            molecular_model.addChild(bond)
-
-                    # Bond to atoms in next z-layer (axial)
-                    if (ring_idx % 2 != z_idx % 2) and (z_idx < num_z_cells):
-                        ring_offset = 0 #(-1) if (z_idx % 2 == 0) else 1
-                        bonding_ring_idx = ring_idx + ring_offset
-                        # Connect to corresponding atom in next layer
-                        next_z_atom = ingot_grid.get((bonding_ring_idx, y_idx, z_idx + 1))
-                        if next_z_atom is not None:
-                            bond = SBBond(current_atom, next_z_atom, 1.0)
-                            SAMSON.hold(bond)
-                            bond.create()
-                            molecular_model.addChild(bond)
-
-                    # layer-to-layer bonds for y
-                    y_layer_mod = (-1) if y_idx % 2 == 0 else 1
-                    z_layer_mod = (-1) if (ring_idx % 2 == z_idx % 2) else 1
-                    if y_layer_mod * z_layer_mod > 0:
-                        next_y_atom = ingot_grid.get((ring_idx, y_idx + 1, z_idx))
-                        if next_y_atom is not None:
-                            bond = SBBond(current_atom, next_y_atom, 1.0)
-                            SAMSON.hold(bond)
-                            bond.create()
-                            molecular_model.addChild(bond)
-
-        SAMSON.endHolding()
 
 if __name__ == "__main__":
     x_width = float(input("Ingot width (Angstroms): "))
