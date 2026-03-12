@@ -28,9 +28,9 @@ fix anchorfix anchor setforce 0.0 0.0 0.0 #first is ID = user-assigned name for 
 velocity anchor set 0.0 0.0 0.0
 
 #translate linearz group
-fix translate_rack_and_pinion_fix linearz move linear 0 0 -10.0
+fix translate_rack_and_pinion_fix linearz move linear 0 0 -5.0
 
 #output
 dump HCB_traj all atom 4 dump_rack_and_pinion.lammpstrj
 thermo 10
-run 100000 
+run 50000 
