@@ -67,6 +67,7 @@ def remove_dangling_carbons(molecular_model):
         if isinstance(atom, SBAtom) and atom.elementType == SBElement.Carbon:
             # Count bonds connected to this atom
             bond_count = 0
+            # TODO: make this more efficient
             for child in molecular_model.getChildren():
                 if isinstance(child, SBBond) and (child.leftAtom is atom or child.rightAtom is atom):
                     bond_count += 1
@@ -143,3 +144,15 @@ def lons_layers_are_offset(bottom_cell_structure, top_cell_structure):
     if (bottom_y_layer_mod * bottom_z_layer_mod) == (top_y_layer_mod * top_z_layer_mod):
         return True
     return False
+
+
+def hexagon_distance(dx, dy):
+    """Distance from center to point (dx,dy) in a regular hexagon metric."""
+    # Regular hexagon with flat sides on top/bottom.
+    sqrt3_2 = math.sqrt(3) / 2.0
+    return max(
+        abs(dx),
+        abs(0.5 * dx + sqrt3_2 * dy),
+        abs(-0.5 * dx + sqrt3_2 * dy)
+    )
+
