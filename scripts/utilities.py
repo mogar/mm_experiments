@@ -49,15 +49,11 @@ def atoms_already_bonded(atom1, atom2):
 
 def remove_atom_and_bonds(atom):
     parent = atom.getParent()
-    # collect bonds attached to the atom
-    bonds = []
-    for child in parent.getChildren():
-        if isinstance(child, SBBond) and (child.leftAtom is atom or child.rightAtom is atom):
-            bonds.append(child)
-
+    bonds = atom.getBondList()
     with SAMSON.holding("Remove atom and its bonds"):
         for b in bonds:
-            b.getParent().removeChild(b)  # remove each bond
+            if b is not None and b.getParent() is not None:
+                b.getParent().removeChild(b)  # remove each bond
         parent.removeChild(atom)          # finally remove the atom
 
 def remove_dangling_carbons(molecular_model):
